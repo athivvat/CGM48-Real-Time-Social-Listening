@@ -1,2 +1,1 @@
-# twitter-hashtags-spam-checker
-Twitter Hashtags Spam Checker
+# Twitter Hashtags Spam Checker
