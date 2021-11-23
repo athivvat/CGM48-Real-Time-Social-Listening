@@ -12,3 +12,6 @@ venv.bak/
 
 # File System
 .DS_Store
+
+# Python
+__pycache__/
