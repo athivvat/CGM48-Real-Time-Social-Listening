@@ -30,10 +30,13 @@ class TwitterStream(tweepy.Stream):
         '''
         Extract info from tweets
         '''
-        # Extract attributes from tweet
+        if status.retweeted_status is not None:
+            text = status.retweeted_status.text
+        else:
+            text = status.text
+
         id_str = status.id_str
         created_at = status.created_at
-        text = status.text
         user_screen_name = status.user.screen_name
         user_created_at = status.user.created_at
         user_followers = status.user.followers_count
@@ -44,10 +47,11 @@ class TwitterStream(tweepy.Stream):
             longitude = status.coordinates['coordinates'][0]
             latitude = status.coordinates['coordinates'][1]
 
-        is_retweeted = status.retweeted
+        is_retweeted = True if status.retweeted_status is not None else False
         retweets = status.retweet_count
         favorites = status.favorite_count
         replies = status.reply_count
+        hashtags = [hashtag['text'] for hashtag in status.entities['hashtags']]
         
         # Produce message to Kafka
         data = {
@@ -64,15 +68,12 @@ class TwitterStream(tweepy.Stream):
             "retweets": retweets,
             "favorites": favorites,
             "replies": replies,
-            "sentiment": {
-                "positive": 0, 
-                "negative": 0,
-                "neutral": 0 
-            }
+            "hashtags": hashtags
         }
-        # print(data)
-        producer.send(topic_name, value=data)
 
+        print("Produce data: ", data, '\n')
+        producer.send(topic_name, value=data)
+        
 
     def on_error(self, status_code):
         '''

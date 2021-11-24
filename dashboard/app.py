@@ -37,7 +37,7 @@ def generate_table(dataframe, max_rows=48):
                 html.Td(dataframe.iloc[i]['Twitter Volume']),
                 html.Td(dataframe.iloc[i]['Favorites']),
                 html.Td(dataframe.iloc[i]['Retweets']),
-                html.Td(dataframe.iloc[i]['Engagement Rate']),
+                html.Td(dataframe.iloc[i]['Engagement Score']),
                 html.Td(dataframe.iloc[i]['Sentiment']),
             ]) for i in range(min(len(dataframe), max_rows))
         ])
