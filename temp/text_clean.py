@@ -87,4 +87,5 @@ for i in range(len(text_lists)):
     print(text)
     print('-'*100)
     text = sub(emojis(), '', text_lists[i], flags=UNICODE)
+    text = sub(r'http\S+', '', text)
     print(text)
