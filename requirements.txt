@@ -12,3 +12,6 @@ tensorflow
 Flask
 faust
 pymongo
+deepcut
+nltk
+scikit-learn
