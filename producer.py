@@ -99,4 +99,4 @@ stream = TwitterStream(
 )
 
 # Filter realtime Tweets by keyword
-stream.filter(track=settings.TRACK_WORDS)
+stream.filter(track=settings.TRACK_WORDS, languages=settings.LANGUAGES)

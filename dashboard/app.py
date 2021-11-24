@@ -1,36 +1,42 @@
-import dash 
-import dash_core_components as dcc
-import dash_html_components as html
+from dotenv import dotenv_values
+import dash
+from dash import dcc
+from dash import html
 import plotly.express as px
-import plotly.graph_objs as go
 import pandas as pd
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app.title = 'Crytocurrency Sentiment Analysis'
 
-server = app.server
+df = pd.read_csv('dashboard/assets/cgm48members.csv')
 
-df = pd.DataFrame({
-    "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-    "Amount": [4, 1, 2, 2, 4, 5],
-    "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-})
 
-fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
+def generate_table(dataframe, max_rows=10):
+    return html.Table([
+        html.Thead(
+            html.Tr([
+                html.Th(col) for col in dataframe.columns
+            ])
+        ),
+        html.Tbody([
+            html.Tr([
+                html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+            ]) for i in range(min(len(dataframe), max_rows))
+        ])
+    ], style={'marginLeft': 'auto', 'marginRight': 'auto'})
+
 
 app.layout = html.Div(children=[
-    html.H1(children='Hello Dash'),
+    html.H1(children='CGM48 Real-Time Social Listening',
+            style={'textAlign': 'center'}),
 
-    html.Div(children='''
-        Dash: A web application framework for your data.
-    '''),
+    html.H5(children='Immediate analytics for all influencers',
+            style={'textAlign': 'center'}),
 
-    dcc.Graph(
-        id='example-graph',
-        figure=fig
-    )
+    html.Hr(),
+
+    generate_table(df)
 ])
 
 

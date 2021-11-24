@@ -1,1 +1,2 @@
-TRACK_WORDS = ['$btc', '$eth', '$bnb', '$usdt', '$sol', '$ada', '$xrp', '$dot', '$usdc', '$doge']
+TRACK_WORDS = ['AngelCGM48']
+LANGUAGE = ['th']
