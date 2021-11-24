@@ -13,15 +13,32 @@ df = pd.read_csv('dashboard/assets/cgm48members.csv')
 
 
 def generate_table(dataframe, max_rows=10):
+    headers = []
+     # Add image column
+    headers.append(html.Th(""))
+
+     # Add column headers
+    for col in dataframe.columns:
+        if col not in ['Facebook Link', 'Instagram Link']:
+            headers.append(html.Th(col))
+
     return html.Table([
         html.Thead(
-            html.Tr([
-                html.Th(col) for col in dataframe.columns
-            ])
+            html.Tr(headers)
         ),
         html.Tbody([
             html.Tr([
-                html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+                html.Td(html.Img(src='assets/images/' + dataframe.iloc[i]['Nickname'].lower() +'.jpg', width=70, height=70, style={'borderRadius': '50%'})),
+                html.Td(dataframe.iloc[i]['Name']),
+                html.Td(dataframe.iloc[i]['Nickname']),
+                html.Td(dataframe.iloc[i]['Age']),
+                html.Td(html.A(children=dataframe.iloc[i]['Facebook'], href=dataframe.iloc[i]['Facebook Link'], target="_blank")),
+                html.Td(html.A(children=dataframe.iloc[i]['Instagram'], href=dataframe.iloc[i]['Instagram Link'], target="_blank")),
+                html.Td(dataframe.iloc[i]['Twitter Volume']),
+                html.Td(dataframe.iloc[i]['Favorites']),
+                html.Td(dataframe.iloc[i]['Retweets']),
+                html.Td(dataframe.iloc[i]['Engagement Rate']),
+                html.Td(dataframe.iloc[i]['Sentiment']),
             ]) for i in range(min(len(dataframe), max_rows))
         ])
     ], style={'marginLeft': 'auto', 'marginRight': 'auto'})
@@ -29,7 +46,7 @@ def generate_table(dataframe, max_rows=10):
 
 app.layout = html.Div(children=[
     html.H1(children='CGM48 Real-Time Social Listening',
-            style={'textAlign': 'center'}),
+            style={'textAlign': 'center', 'marginTop': '50px'}),
 
     html.H5(children='Immediate analytics for all influencers',
             style={'textAlign': 'center'}),
