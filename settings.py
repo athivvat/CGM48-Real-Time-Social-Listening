@@ -24,4 +24,4 @@ TRACK_WORDS = ['AngelCGM48',
                'PunchCGM48',
                'SitaCGM48',
                ]
-LANGUAGE = ['th']
+LANGUAGES = ['th']

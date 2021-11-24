@@ -12,7 +12,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 df = pd.read_csv('dashboard/assets/cgm48members.csv')
 
 
-def generate_table(dataframe, max_rows=10):
+def generate_table(dataframe, max_rows=48):
     headers = []
      # Add image column
     headers.append(html.Th(""))
@@ -53,7 +53,9 @@ app.layout = html.Div(children=[
 
     html.Hr(),
 
-    generate_table(df)
+    generate_table(df),
+
+    html.P(children='Made with \u2764\ufe0f by 401 Cha-Thai', style={'textAlign': 'center', 'margin': '50px'}),
 ])
 
 

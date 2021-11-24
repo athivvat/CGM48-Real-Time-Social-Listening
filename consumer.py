@@ -1,8 +1,13 @@
+import re
 from kafka import KafkaConsumer, consumer
 from pymongo import MongoClient
+from dotenv import dotenv_values
 import json
 
-topic_name = 'TOPIC'
+"""LOAD ENVIRONMENT VALUES"""
+config = dotenv_values(".env")
+
+topic_name = config['KAFKA_TOPIC']
 
 # Connect to MongoDB
 try:
@@ -34,8 +39,10 @@ for message in consumer:
     user_location = record['user_location']
     longitude = record['longitude']
     latitude = record['latitude']
+    is_retweeted = record['is_retweeted']
     retweets = record['retweets']
     favorites = record['favorites']
+    replies = record['replies']
 
     # Create dictionary and ingest data into mogoDB
     try:
@@ -47,14 +54,14 @@ for message in consumer:
             "user_created_at": user_created_at,
             "user_followers_count": user_followers,
             "user_location": user_location,
-            "longitude": longitude,
-            "latitude": latitude,
+            "is_retweeted": is_retweeted,
             "retweets": retweets,
             "favorites": favorites,
+            "replies": replies,
             "sentiment": {
-                "bullish": 0,   # For those Tweets that denote a positive sentiment.
-                "bearish": 0,   # For those Tweets that denote a negative sentiment.
-                "neutral": 0    # For those Tweets that do not convey any discernible sentiment.
+                "positive": 0, 
+                "negative": 0,
+                "neutral": 0 
             }
         }
         record_id = db.tweet_info.insert_one(tweet_record)
