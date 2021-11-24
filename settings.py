@@ -1,0 +1,1 @@
+TRACK_WORDS = ['$btc', '$eth', '$bnb', '$usdt', '$sol', '$ada', '$xrp', '$dot', '$usdc', '$doge']

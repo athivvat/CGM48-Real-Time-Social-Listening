@@ -1,3 +1,14 @@
 python-dotenv
 kafka-python
 tweepy
+plotly
+dash
+numpy
+pandas
+seaborn
+matplotlib
+transformers
+tensorflow
+Flask
+faust
+pymongo
