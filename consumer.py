@@ -12,7 +12,7 @@ topic_name = config['KAFKA_TOPIC']
 # Connect to MongoDB
 try:
     client = MongoClient(config['MONGODB_URI'])
-    db = client.test
+    db = client.twitters
     print('Connected to MongoDB')
 except:
     print('Could not connect to MongoDB')

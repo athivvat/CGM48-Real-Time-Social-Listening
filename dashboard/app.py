@@ -19,6 +19,12 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 df = pd.read_csv('dashboard/assets/cgm48members.csv')
 
 
+def generate_graph(df):
+    fig = px.bar(df, x="Hashtag", y="Twitter Volume", title="Twitter Volume by Members", text="Twitter Volume", range_y=[0, df['Twitter Volume'].max() + 5])
+    fig.update_traces(texttemplate='%{text:.s}', textposition='outside')
+    return dcc.Graph(id='live-graph', figure=fig, style={'marginBottom': '50px'})
+
+
 def generate_table(dataframe, max_rows=48):
     headers = []
     # Add image column
@@ -67,19 +73,23 @@ def generate_summary(df, n):
     return html.Table([
         html.Thead(
             html.Tr([
-                html.Th("Twitter Volume"), 
-                html.Th("Favorites"), 
+                html.Th("Twitter Volume"),
+                html.Th("Favorites"),
                 html.Th("Retweets")
             ])
         ),
-         html.Tbody([
+        html.Tbody([
             html.Tr([
-                html.Td(twitter_volume, style={'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'}),
-                html.Td(favorites, style={'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'}),
-                html.Td(retweets, style={'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'})
+                html.Td(twitter_volume, style={
+                    'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'}),
+                html.Td(favorites, style={
+                        'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'}),
+                html.Td(retweets, style={
+                        'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'})
             ])
-         ])
-    ], style={'marginLeft': 'auto', 'marginRight': 'auto', 'marginBottom': '50px'})
+        ])
+    ], style={'marginLeft': 'auto', 'marginRight': 'auto', 'marginBottom': '20px'})
+
 
 app.layout = html.Div(children=[
     html.H1(children='CGM48 Real-Time Social Monitoring',
@@ -89,7 +99,7 @@ app.layout = html.Div(children=[
             style={'textAlign': 'center'}),
 
     html.P(children='Made with \u2764\ufe0f by 401 Cha-Thai',
-           style={'textAlign': 'center', 'margin': '50px'}),
+           style={'textAlign': 'center', 'margin': '20px'}),
 
     html.Hr(),
 
@@ -97,7 +107,9 @@ app.layout = html.Div(children=[
 
     html.Div(id='live-summary-update'),
 
-    html.Div(id='live-update'),
+    html.Div(id='live-graph-update'),
+
+    html.Div(id='live-table-update'),
 
     dcc.Interval(
         id='interval-component-slow',
@@ -118,6 +130,7 @@ def favorite_count(collection, hashtag):
     else:
         return 0
 
+
 def retweet_count(collection, hashtag):
     query_results = collection.aggregate([
         {'$match': {'hashtags': hashtag}},
@@ -129,24 +142,15 @@ def retweet_count(collection, hashtag):
     else:
         return 0
 
+
 @app.callback(
     [Output('live-summary-update', 'children')],
     [Input('interval-component-slow', 'n_intervals')]
 )
-
 def update_summary(n):
-    children = [generate_summary(df, n)]
-    return children
-
-
-@ app.callback(
-    [Output('live-update', 'children')],
-    [Input('interval-component-slow', 'n_intervals')]
-)
-def update_table(n):
     # Loading data from MongoDB
     client = MongoClient(config['MONGODB_URI'])
-    db = client.twitter
+    db = client.twitters
     collection = db.tweets
 
     for i in range(len(df)):
@@ -161,10 +165,28 @@ def update_table(n):
             collection, df.iloc[i]['Hashtag'])
 
         if df.iloc[i]['Twitter Volume'] > 0:
-            df.at[i, 'Engagement Score'] = (df.iloc[i]['Favorites'] + df.iloc[i]['Retweets']) / df.iloc[i]['Twitter Volume'] * 100
+            df.at[i, 'Engagement Score'] = (
+                df.iloc[i]['Favorites'] + df.iloc[i]['Retweets']) / df.iloc[i]['Twitter Volume'] * 100
         else:
             df.at[i, 'Engagement Score'] = 0.0
 
+    children = [generate_summary(df, n)]
+    return children
+
+
+@app.callback(
+    [Output('live-graph-update', 'children')],
+    [Input('interval-component-slow', 'n_intervals')]
+)
+def update_graph(n):
+    children = [generate_graph(df)]
+    return children
+
+@ app.callback(
+    [Output('live-table-update', 'children')],
+    [Input('interval-component-slow', 'n_intervals')]
+)
+def update_table(n):
     children = [generate_table(df)]
     return children
 
