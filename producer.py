@@ -30,11 +30,15 @@ class TwitterStream(tweepy.Stream):
         '''
         Extract info from tweets
         '''
-        if status.retweeted_status is not None:
+        
+        # Get text message if it is a retweet 
+        try:
+            is_retweeted = True if status.retweeted_status is not None else False
             text = status.retweeted_status.text
-        else:
+        except:
+            is_retweeted = False
             text = status.text
-
+            
         id_str = status.id_str
         created_at = status.created_at
         user_screen_name = status.user.screen_name
@@ -46,8 +50,6 @@ class TwitterStream(tweepy.Stream):
         if status.coordinates:
             longitude = status.coordinates['coordinates'][0]
             latitude = status.coordinates['coordinates'][1]
-
-        is_retweeted = True if status.retweeted_status is not None else False
         retweets = status.retweet_count
         favorites = status.favorite_count
         replies = status.reply_count
