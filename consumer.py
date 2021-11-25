@@ -11,11 +11,12 @@ topic_name = config['KAFKA_TOPIC']
 
 # Connect to MongoDB
 try:
-    client = MongoClient('mongodb://localhost:27017')
-    db = client.twitters
+    client = MongoClient(config['MONGODB_URI'])
+    db = client.test
     print('Connected to MongoDB')
 except:
     print('Could not connect to MongoDB')
+    exit()
 
 consumer = KafkaConsumer(topic_name,
                          bootstrap_servers=[
@@ -57,6 +58,8 @@ for message in consumer:
     favorites = record['favorites']
     replies = record['replies']
     hashtags = record['hashtags']
+
+    # Sentiment
 
     # Create dictionary and ingest data into mogoDB
     try:

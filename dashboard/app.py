@@ -7,7 +7,6 @@ from dash import html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 import plotly.express as px
 import pandas as pd
-from pymongo.message import query
 
 """LOAD ENVIRONMENT VALUES"""
 path = Path().absolute()
@@ -147,7 +146,7 @@ def update_summary(n):
 def update_table(n):
     # Loading data from MongoDB
     client = MongoClient(config['MONGODB_URI'])
-    db = client.twitters
+    db = client.twitter
     collection = db.tweets
 
     for i in range(len(df)):
