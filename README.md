@@ -1,4 +1,4 @@
-# CGM48 Real-Time Social Listening
+# CGM48 Real-Time Social Monitoring
 
 ![Data Pipeline Component](data-pipeline-component.png)
 
