@@ -12,7 +12,7 @@ topic_name = config['KAFKA_TOPIC']
 # Connect to MongoDB
 try:
     client = MongoClient(config['MONGODB_URI'])
-    db = client.twitters
+    db = client.twitter
     print('Connected to MongoDB')
 except:
     print('Could not connect to MongoDB')
@@ -71,15 +71,21 @@ for message in consumer:
             "user_created_at": user_created_at,
             "user_followers": user_followers,
             "user_location": user_location,
+            "longitude": longitude,
+            "latitude": latitude,
             "is_retweeted": is_retweeted,
             "retweets": retweets,
             "favorites": favorites,
             "replies": replies,
-            
             "hashtags": hashtags
         }
+
         print(tweet_record)
-        record_id = db.tweets.insert_one(tweet_record)
-        print('Inserted record with id:', record_id.inserted_id, '\n')
-    except:
-        print("Error: unable to create tweet dictionary")
+        
+        result = db.tweets.update_one({'id_str': tweet_record['id_str']}, {'$set': tweet_record}, upsert=True)
+        if result.upserted_id is None:
+            print("Upserted result: Tweet already exists", '\n')
+        else:
+            print('Upserted result:', result.upserted_id, '\n')
+    except Exception as error:
+        print('Error:', error)

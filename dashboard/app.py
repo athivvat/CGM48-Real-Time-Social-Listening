@@ -18,12 +18,84 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 df = pd.read_csv('dashboard/assets/cgm48members.csv')
 
+app.layout = html.Div(children=[
+    html.H1(children='CGM48 Real-Time Social Monitoring',
+            style={'textAlign': 'center', 'marginTop': '50px'}),
+
+    html.H5(children='Immediate analytics for all influencers',
+            style={'textAlign': 'center'}),
+
+    html.P(children='Made with \u2764\ufe0f by 401 Cha-Thai',
+           style={'textAlign': 'center', 'margin': '20px'}),
+
+    html.Hr(),
+
+    html.H3(children='Summary', style={'textAlign': 'center'}),
+
+    html.Div(id='live-summary-update'),
+
+    html.Div(id='live-graph-update'),
+
+    html.Div(id='live-table-update'),
+
+    dcc.Interval(
+        id='interval-component-slow',
+        interval=5*1000,  # in milliseconds: 5000 ms = 5 sec.
+        n_intervals=0
+    )
+], style={'padding': '20px'})
+
+
+def favorite_count(collection, hashtag):
+    query_results = collection.aggregate([
+        {'$match': {'hashtags': hashtag}},
+        {'$group': {'_id': "null", 'favorites': {'$sum': "$favorites"}}}
+    ])
+    resuults = list(query_results)
+    if len(resuults) > 0:
+        return resuults[0]['favorites']
+    else:
+        return 0
+
+
+def retweet_count(collection, hashtag):
+    query_results = collection.aggregate([
+        {'$match': {'hashtags': hashtag}},
+        {'$group': {'_id': "null", 'retweets': {'$sum': "$retweets"}}}
+    ])
+    results = list(query_results)
+    if len(results) > 0:
+        return results[0]['retweets']
+    else:
+        return 0
+
 
 def generate_graph(df):
-    fig = px.bar(df, x="Hashtag", y="Twitter Volume", title="Twitter Volume by Members", text="Twitter Volume", range_y=[0, df['Twitter Volume'].max() + 5])
+    
+    # sort data
+    df = df.sort_values(by=['Twitter Volume'], ascending=False)
+    fig = px.bar(df, x="Hashtag", y="Twitter Volume", title="Twitter Volume by Members",
+                 text="Twitter Volume", range_y=[0, df['Twitter Volume'].max() + 200])
     fig.update_traces(texttemplate='%{text:.s}', textposition='outside')
-    return dcc.Graph(id='live-graph', figure=fig, style={'marginBottom': '50px'})
 
+    return html.Div([
+        dcc.Graph(
+            id='live-graph',
+            figure=fig,
+            # figure={
+            #     'data': [{'x': df['Hashtag'], 'y': df["Twitter Volume"], 'type': 'bar'}],
+            #     'layout': {
+            #         'title': 'Twitter Volume by Members',
+            #         'text': 'Twitter Volume',
+            #         'texttemplate': '%{y:.s}',
+            #         'textposition': 'outside'
+            #     }
+            # },
+            style={'marginBottom': '50px'}
+        )
+    ])
+    
+    
 
 def generate_table(dataframe, max_rows=48):
     headers = []
@@ -57,7 +129,7 @@ def generate_table(dataframe, max_rows=48):
                         style={'textAlign': 'center'}),
                 html.Td(dataframe.iloc[i]['Retweets'],
                         style={'textAlign': 'center'}),
-                html.Td(f"{dataframe.iloc[i]['Engagement Score']}%", style={
+                html.Td(f"{dataframe.iloc[i]['Engagement Score']:.2f}%", style={
                         'textAlign': 'center'}),
                 html.Td(dataframe.iloc[i]['Sentiment']),
             ]) for i in range(min(len(dataframe), max_rows))
@@ -80,67 +152,15 @@ def generate_summary(df, n):
         ),
         html.Tbody([
             html.Tr([
-                html.Td(twitter_volume, style={
+                html.Td(f'{twitter_volume:,}', style={
                     'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'}),
-                html.Td(favorites, style={
+                html.Td(f'{favorites:,}', style={
                         'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'}),
-                html.Td(retweets, style={
+                html.Td(f'{retweets:,}', style={
                         'textAlign': 'center', 'fontSize': '2em', 'fontWeight': 'bold'})
             ])
         ])
     ], style={'marginLeft': 'auto', 'marginRight': 'auto', 'marginBottom': '20px'})
-
-
-app.layout = html.Div(children=[
-    html.H1(children='CGM48 Real-Time Social Monitoring',
-            style={'textAlign': 'center', 'marginTop': '50px'}),
-
-    html.H5(children='Immediate analytics for all influencers',
-            style={'textAlign': 'center'}),
-
-    html.P(children='Made with \u2764\ufe0f by 401 Cha-Thai',
-           style={'textAlign': 'center', 'margin': '20px'}),
-
-    html.Hr(),
-
-    html.H3(children='Summary', style={'textAlign': 'center'}),
-
-    html.Div(id='live-summary-update'),
-
-    html.Div(id='live-graph-update'),
-
-    html.Div(id='live-table-update'),
-
-    dcc.Interval(
-        id='interval-component-slow',
-        interval=5*1000,  # in milliseconds: 5000 ms = 5 sec.
-        n_intervals=0
-    )
-], style={'padding': '20px'})
-
-
-def favorite_count(collection, hashtag):
-    query_results = collection.aggregate([
-        {'$match': {'hashtags': hashtag}},
-        {'$group': {'_id': None, 'favorite_count': {'$sum': "favorites"}}}
-    ])
-    resuults = list(query_results)
-    if len(resuults) > 0:
-        return resuults[0]['favorite_count']
-    else:
-        return 0
-
-
-def retweet_count(collection, hashtag):
-    query_results = collection.aggregate([
-        {'$match': {'hashtags': hashtag}},
-        {'$group': {'_id': None, 'retweet_count': {'$sum': "retweets"}}}
-    ])
-    resuults = list(query_results)
-    if len(resuults) > 0:
-        return resuults[0]['retweet_count']
-    else:
-        return 0
 
 
 @app.callback(
@@ -150,23 +170,27 @@ def retweet_count(collection, hashtag):
 def update_summary(n):
     # Loading data from MongoDB
     client = MongoClient(config['MONGODB_URI'])
-    db = client.twitters
+    db = client.twitter
     collection = db.tweets
 
     for i in range(len(df)):
+        retweets = retweet_count(collection, df.iloc[i]['Hashtag'])
+        df.at[i, 'Retweets'] = retweets
+
         twitter_volume = collection.count_documents(
             {'hashtags': df.iloc[i]['Hashtag']})
-        df.at[i, 'Twitter Volume'] = twitter_volume
+        original_twitter_volume = collection.count_documents(
+            {'hashtags': df.iloc[i]['Hashtag'], 'is_retweets': False})
+
+        df.at[i, 'Twitter Volume'] = twitter_volume - \
+            original_twitter_volume + retweets
 
         df.at[i, 'Favorites'] = favorite_count(
             collection, df.iloc[i]['Hashtag'])
 
-        df.at[i, 'Retweets'] = retweet_count(
-            collection, df.iloc[i]['Hashtag'])
-
         if df.iloc[i]['Twitter Volume'] > 0:
             df.at[i, 'Engagement Score'] = (
-                df.iloc[i]['Favorites'] + df.iloc[i]['Retweets']) / df.iloc[i]['Twitter Volume'] * 100
+                df.iloc[i]['Favorites'] + df.iloc[i]['Retweets']) / df['Twitter Volume'].sum() * 100
         else:
             df.at[i, 'Engagement Score'] = 0.0
 
@@ -181,6 +205,7 @@ def update_summary(n):
 def update_graph(n):
     children = [generate_graph(df)]
     return children
+
 
 @ app.callback(
     [Output('live-table-update', 'children')],
