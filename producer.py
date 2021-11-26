@@ -7,7 +7,6 @@ from dotenv import dotenv_values
 from kafka import KafkaProducer
 from bson import json_util
 from requests import get
-import pprint
 
 """LOAD ENVIRONMENT VALUES"""
 config = dotenv_values(".env")
@@ -35,7 +34,6 @@ class TwitterStream(tweepy.Stream):
         Extract info from tweets
         '''
         print('='*100)
-        # pprint.pprint(status)
         try:
             is_retweeted = True if status.retweeted_status is not None else False
         except:
