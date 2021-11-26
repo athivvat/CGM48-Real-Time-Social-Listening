@@ -7,6 +7,7 @@ from dotenv import dotenv_values
 from kafka import KafkaProducer
 from bson import json_util
 from requests import get
+import json
 
 """LOAD ENVIRONMENT VALUES"""
 config = dotenv_values(".env")
@@ -82,9 +83,10 @@ def set_data(status, is_retweeted):
     text = status.text
     hashtags += [hashtag['text'] for hashtag in status.entities['hashtags']]
     if status.truncated:
-        text = status.extended_tweet.full_text
+        extended_tweet = status.extended_tweet
+        text = extended_tweet["full_text"]
         hashtags += [hashtag['text']
-                     for hashtag in status.extended_tweet.entities['hashtags']]
+                     for hashtag in extended_tweet["entities"]['hashtags']]
     hashtags = list(set(hashtags))
 
     # Clean
@@ -181,6 +183,7 @@ def remove_link(string):
 
 def clean_text(string):
     string = re.sub(emojis(), '', string, flags=re.UNICODE)
+    string = re.sub('\n', " ", string)
     string = remove_link(string)
     return string
 
