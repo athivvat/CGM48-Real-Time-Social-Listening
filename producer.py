@@ -1,3 +1,4 @@
+from os import stat
 import tweepy
 import settings
 import re
@@ -6,6 +7,7 @@ from dotenv import dotenv_values
 from kafka import KafkaProducer
 from bson import json_util
 from requests import get
+import pprint
 
 """LOAD ENVIRONMENT VALUES"""
 config = dotenv_values(".env")
@@ -32,54 +34,23 @@ class TwitterStream(tweepy.Stream):
         '''
         Extract info from tweets
         '''
-
-        # Get text message if it is a retweet
+        print('='*100)
+        # pprint.pprint(status)
         try:
             is_retweeted = True if status.retweeted_status is not None else False
-            text = status.retweeted_status.text
         except:
             is_retweeted = False
-            text = status.text
 
-        id_str = status.id_str
-        created_at = status.created_at
-        user_screen_name = status.user.screen_name
-        user_created_at = status.user.created_at
-        user_followers = status.user.followers_count
-        user_location = status.user.location
-        longitude = None
-        latitude = None
-        if status.coordinates:
-            longitude = status.coordinates['coordinates'][0]
-            latitude = status.coordinates['coordinates'][1]
-        retweets = status.retweet_count
-        favorites = status.favorite_count
-        replies = status.reply_count
-        hashtags = [hashtag['text'] for hashtag in status.entities['hashtags']]
-
-        # Clean
-        text = clean_text(text)
-
-        # Produce message to Kafka
-        data = {
-            "id_str": id_str,
-            "created_at": created_at,
-            "text": text,
-            "user_screen_name": user_screen_name,
-            "user_created_at": user_created_at,
-            "user_followers": user_followers,
-            "user_location": user_location,
-            "longitude": longitude,
-            "latitude": latitude,
-            "is_retweeted": is_retweeted,
-            "retweets": retweets,
-            "favorites": favorites,
-            "replies": replies,
-            "hashtags": hashtags
-        }
-
+        data = set_data(status, is_retweeted)
         print("Produce data: ", data, '\n')
         producer.send(topic_name, value=data)
+
+        if is_retweeted == True:
+            is_retweeted = False
+            status = status.retweeted_status
+            data = set_data(status, is_retweeted)
+            print("Produce data (retweeted): ", data, '\n')
+            producer.send(topic_name, value=data)
 
     def on_error(self, status_code):
         '''
@@ -88,6 +59,57 @@ class TwitterStream(tweepy.Stream):
         if status_code == 420:
             # return False to disconnect the stream
             return False
+
+
+def set_data(status, is_retweeted):
+    id_str = status.id_str
+    created_at = status.created_at
+    user_screen_name = status.user.screen_name
+    user_created_at = status.user.created_at
+    user_followers = status.user.followers_count
+    user_location = status.user.location
+    longitude = None
+    latitude = None
+    if status.coordinates:
+        longitude = status.coordinates['coordinates'][0]
+        latitude = status.coordinates['coordinates'][1]
+    retweets = status.retweet_count
+    favorites = status.favorite_count
+    replies = status.reply_count
+
+    # text, hashtags
+    hashtags = [hashtag['text'] for hashtag in status.entities['hashtags']]
+    if is_retweeted:
+        status = status.retweeted_status
+    text = status.text
+    hashtags += [hashtag['text'] for hashtag in status.entities['hashtags']]
+    if status.truncated:
+        text = status.extended_tweet.full_text
+        hashtags += [hashtag['text']
+                     for hashtag in status.extended_tweet.entities['hashtags']]
+    hashtags = list(set(hashtags))
+
+    # Clean
+    text = clean_text(text)
+
+    # Produce message to Kafka
+    data = {
+        "id_str": id_str,
+        "created_at": created_at,
+        "text": text,
+        "user_screen_name": user_screen_name,
+        "user_created_at": user_created_at,
+        "user_followers": user_followers,
+        "user_location": user_location,
+        "longitude": longitude,
+        "latitude": latitude,
+        "is_retweeted": is_retweeted,
+        "retweets": retweets,
+        "favorites": favorites,
+        "replies": replies,
+        "hashtags": hashtags
+    }
+    return data
 
 
 def emojis() -> str:
