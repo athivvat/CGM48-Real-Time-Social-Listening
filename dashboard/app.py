@@ -41,7 +41,7 @@ app.layout = html.Div(children=[
                      {'label': 'Engagement Score', 'value': 'Engagement Score'}],
             value='Selecting data',
         ),
-    ], style={'width': '10%', 'display': 'inline-block'}),
+    ], style={'width': '20%', 'display': 'inline-block'}),
 
     html.Div(id='live-graph-update'),
 
@@ -89,8 +89,10 @@ def generate_graph(df, x, y, data_type_selected):
 
     # sort dataframe by y value
     df = df.sort_values(by=[y_label], ascending=False)
+    df = df[:10]
 
-    fig = px.bar(df, x="Hashtag", y=y_label, title="Twitter Volume by Members", range_y=[0, y.max() + y_extend])
+    fig = px.bar(df, x="Hashtag", y=y_label,
+                 title="Twitter Volume by Members", range_y=[0, y.max() + y_extend])
     # fig.update_traces(texttemplate='%{text:.s}', textposition='outside')
 
     return html.Div([
@@ -109,7 +111,7 @@ def generate_table(dataframe, max_rows=48):
 
     # Add column headers
     for col in dataframe.columns:
-        if col not in ['Facebook Link', 'Instagram Link']:
+        if col not in ['Facebook Link', 'Instagram Link', 'Sentiment']:
             headers.append(html.Th(col))
 
     return html.Table([
@@ -136,7 +138,10 @@ def generate_table(dataframe, max_rows=48):
                         style={'textAlign': 'center'}),
                 html.Td(f"{dataframe.iloc[i]['Engagement Score']:.2f}%", style={
                         'textAlign': 'center'}),
-                html.Td(dataframe.iloc[i]['Sentiment']),
+                html.Td(dataframe.iloc[i]['Sentiment Positive'], style={
+                        'textAlign': 'center'}),
+                html.Td(dataframe.iloc[i]['Sentiment Negative'], style={
+                        'textAlign': 'center'}),
             ]) for i in range(min(len(dataframe), max_rows))
         ])
     ], style={'marginLeft': 'auto', 'marginRight': 'auto'})
@@ -199,6 +204,21 @@ def update_summary(n):
         else:
             df.at[i, 'Engagement Score'] = 0.0
 
+        sentiment_result = collection.aggregate([
+            {'$match': {'hashtags': df.iloc[i]['Hashtag']}},
+            {'$group': {'_id': "$sentiment", 'count': {'$count': {}}}}
+        ])
+        sentiments = list(sentiment_result)
+        df.at[i, 'Sentiment Positive'] = 0
+        df.at[i, 'Sentiment Negative'] = 0
+
+        if len(sentiments) > 0:
+            for sentiment in sentiments:
+                if sentiment['_id'] == 1:
+                    df.at[i, 'Sentiment Positive'] = sentiment['count'] if sentiment['count'] is not None else 0
+                else:
+                    df.at[i, 'Sentiment Negative'] = sentiment['count'] if sentiment['count'] is not None else 0
+
     children = [generate_summary(df, n)]
     return children
 
@@ -206,15 +226,16 @@ def update_summary(n):
 @app.callback(
     [Output('live-graph-update', 'children')],
     [Input('selecting-data', 'value'),
-    Input('interval-component-slow', 'n_intervals')]
+     Input('interval-component-slow', 'n_intervals')]
 )
 def update_graph(data_type_selected, n):
     if data_type_selected not in ['Twitter Volume', 'Engagement Score']:
         data_type_selected = 'Twitter Volume'
-    
+
     print(data_type_selected)
 
-    children = [generate_graph(df, x=df['Hashtag'], y=df[data_type_selected], data_type_selected=data_type_selected)]
+    children = [generate_graph(
+        df, x=df['Hashtag'], y=df[data_type_selected], data_type_selected=data_type_selected)]
     return children
 
 

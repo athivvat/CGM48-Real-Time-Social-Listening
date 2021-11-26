@@ -1,8 +1,13 @@
-import re
 from kafka import KafkaConsumer, consumer
 from pymongo import MongoClient
 from dotenv import dotenv_values
+from nltk.classify import apply_features
+from nltk import FreqDist
+import numpy as np
+import re
 import json
+import pickle
+import deepcut
 
 """LOAD ENVIRONMENT VALUES"""
 config = dotenv_values(".env")
@@ -29,18 +34,43 @@ consumer = KafkaConsumer(topic_name,
 
                          value_deserializer=lambda m: json.loads(m.decode('utf-8')))
 
-def sentiment_analysis(text):
-    # Get sentiment score
-    # sentiment_score = sentiment_analysis_client.sentiment_analysis(text)
-    # return sentiment_score
-    return 0
 
-def engagement_score(text):
-    # Get engagement score
-    # engagement_score = engagement_score_client.engagement_score(text)
-    # return engagement_score
-    return 0
+'''
+Sentiment Analysis
+'''
+data_pos = [(line.strip(), 'pos') for line in open("sentiment/neg.txt", 'r', encoding="utf8")]
+data_neg = [(line.strip(), 'neg') for line in open("sentiment/pos.txt", 'r', encoding="utf8")]
 
+def split_words (sentence):
+    return deepcut.tokenize(''.join(sentence.lower().split()))
+    
+sentences = [(split_words(sentence), sentiment) for (sentence, sentiment) in data_pos + data_neg]
+def get_words_in_tweets(tweets):
+        all_words = []
+        for (words, sentiment) in tweets:
+          all_words.extend(words)
+        return all_words
+
+def get_word_features(wordlist):
+    wordlist = FreqDist(wordlist)
+    word_features = [word[0] for word in wordlist.most_common()]
+    return word_features
+
+def extract_features(document):
+    document_words = set(document)
+    features = {}
+    for word in word_features:
+        features['contains(%s)' % word] = (word in document_words)
+    return features
+
+# Load the model
+sentiment_model = pickle.load(open('sentiment/my_classifier.pickle', 'rb'))
+
+word_features = None
+
+word_features = get_word_features(get_words_in_tweets(sentences))
+
+# Consume tweets from Kafka
 for message in consumer:
     record = json.loads(json.dumps(message.value))
 
@@ -60,7 +90,13 @@ for message in consumer:
     hashtags = record['hashtags']
 
     # Sentiment
+    sentiment_score = sentiment_model.classify(extract_features(text.split()))
+    sentement = 1 if sentiment_score == 'pos' else 0
+    print(sentement)
 
+    '''
+    Save to MongoDB
+    '''
     # Create dictionary and ingest data into mogoDB
     try:
         tweet_record = {
@@ -77,7 +113,8 @@ for message in consumer:
             "retweets": retweets,
             "favorites": favorites,
             "replies": replies,
-            "hashtags": hashtags
+            "hashtags": hashtags,
+            "sentiment": sentement
         }
 
         print(tweet_record)
