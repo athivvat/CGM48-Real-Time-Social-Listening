@@ -80,8 +80,6 @@ def retweet_count(collection, hashtag):
 
 
 def generate_graph(df, x, y, data_type_selected):
-    # sort data
-    
     if data_type_selected == 'Twitter Volume':
         y_extend = 200
         y_label = 'Twitter Volume'
@@ -89,6 +87,7 @@ def generate_graph(df, x, y, data_type_selected):
         y_extend = 5
         y_label = 'Engagement Score'
 
+    # sort dataframe by y value
     df = df.sort_values(by=[y_label], ascending=False)
 
     fig = px.bar(df, x="Hashtag", y=y_label, title="Twitter Volume by Members", range_y=[0, y.max() + y_extend])
@@ -98,15 +97,6 @@ def generate_graph(df, x, y, data_type_selected):
         dcc.Graph(
             id='live-graph',
             figure=fig,
-            # figure={
-            #     'data': [{'x': df['Hashtag'], 'y': df["Twitter Volume"], 'type': 'bar'}],
-            #     'layout': {
-            #         'title': 'Twitter Volume by Members',
-            #         'text': 'Twitter Volume',
-            #         'texttemplate': '%{y:.s}',
-            #         'textposition': 'outside'
-            #     }
-            # },
             style={'marginBottom': '50px'}
         )
     ])
