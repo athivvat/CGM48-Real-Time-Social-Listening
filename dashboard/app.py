@@ -34,6 +34,15 @@ app.layout = html.Div(children=[
 
     html.Div(id='live-summary-update'),
 
+    html.Div([
+        dcc.Dropdown(
+            id='selecting-data',
+            options=[{'label': 'Twitter Volume', 'value': 'Twitter Volume'},
+                     {'label': 'Engagement Score', 'value': 'Engagement Score'}],
+            value='Selecting data',
+        ),
+    ], style={'width': '10%', 'display': 'inline-block'}),
+
     html.Div(id='live-graph-update'),
 
     html.Div(id='live-table-update'),
@@ -70,32 +79,28 @@ def retweet_count(collection, hashtag):
         return 0
 
 
-def generate_graph(df):
-    
-    # sort data
-    df = df.sort_values(by=['Twitter Volume'], ascending=False)
-    fig = px.bar(df, x="Hashtag", y="Twitter Volume", title="Twitter Volume by Members",
-                 text="Twitter Volume", range_y=[0, df['Twitter Volume'].max() + 200])
-    fig.update_traces(texttemplate='%{text:.s}', textposition='outside')
+def generate_graph(df, x, y, data_type_selected):
+    if data_type_selected == 'Twitter Volume':
+        y_extend = 200
+        y_label = 'Twitter Volume'
+    else:
+        y_extend = 5
+        y_label = 'Engagement Score'
+
+    # sort dataframe by y value
+    df = df.sort_values(by=[y_label], ascending=False)
+
+    fig = px.bar(df, x="Hashtag", y=y_label, title="Twitter Volume by Members", range_y=[0, y.max() + y_extend])
+    # fig.update_traces(texttemplate='%{text:.s}', textposition='outside')
 
     return html.Div([
         dcc.Graph(
             id='live-graph',
             figure=fig,
-            # figure={
-            #     'data': [{'x': df['Hashtag'], 'y': df["Twitter Volume"], 'type': 'bar'}],
-            #     'layout': {
-            #         'title': 'Twitter Volume by Members',
-            #         'text': 'Twitter Volume',
-            #         'texttemplate': '%{y:.s}',
-            #         'textposition': 'outside'
-            #     }
-            # },
             style={'marginBottom': '50px'}
         )
     ])
-    
-    
+
 
 def generate_table(dataframe, max_rows=48):
     headers = []
@@ -200,10 +205,16 @@ def update_summary(n):
 
 @app.callback(
     [Output('live-graph-update', 'children')],
-    [Input('interval-component-slow', 'n_intervals')]
+    [Input('selecting-data', 'value'),
+    Input('interval-component-slow', 'n_intervals')]
 )
-def update_graph(n):
-    children = [generate_graph(df)]
+def update_graph(data_type_selected, n):
+    if data_type_selected not in ['Twitter Volume', 'Engagement Score']:
+        data_type_selected = 'Twitter Volume'
+    
+    print(data_type_selected)
+
+    children = [generate_graph(df, x=df['Hashtag'], y=df[data_type_selected], data_type_selected=data_type_selected)]
     return children
 
 
